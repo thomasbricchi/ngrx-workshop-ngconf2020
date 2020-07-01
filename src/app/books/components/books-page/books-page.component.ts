@@ -7,7 +7,7 @@ import {
   BookRequiredProps
 } from "src/app/shared/models";
 import { BooksService } from "src/app/shared/services";
-import { BooksPageActions } from "../../actions";
+import { BooksApiActions, BooksPageActions } from "../../actions";
 
 @Component({
   selector: "app-books",
@@ -22,7 +22,8 @@ export class BooksPageComponent implements OnInit {
   constructor(
     private booksService: BooksService,
     private store: Store<State>
-  ) {}
+  ) {
+  }
 
   ngOnInit() {
     this.store.dispatch(BooksPageActions.enter());
@@ -33,6 +34,7 @@ export class BooksPageComponent implements OnInit {
 
   getBooks() {
     this.booksService.all().subscribe(books => {
+      this.store.dispatch(BooksApiActions.loadedSuccess({books}));
       this.books = books;
       this.updateTotals(books);
     });
@@ -43,7 +45,7 @@ export class BooksPageComponent implements OnInit {
   }
 
   onSelect(book: BookModel) {
-    this.store.dispatch(BooksPageActions.selectBook({ bookId: book.id }));
+    this.store.dispatch(BooksPageActions.selectBook({bookId: book.id}));
 
     this.currentBook = book;
   }
@@ -67,9 +69,10 @@ export class BooksPageComponent implements OnInit {
   }
 
   saveBook(bookProps: BookRequiredProps) {
-    this.store.dispatch(BooksPageActions.createBook({ book: bookProps }));
+    this.store.dispatch(BooksPageActions.createBook({book: bookProps}));
 
-    this.booksService.create(bookProps).subscribe(() => {
+    this.booksService.create(bookProps).subscribe(book => {
+      this.store.dispatch(BooksApiActions.createSuccess({book}));
       this.getBooks();
       this.removeSelectedBook();
     });
@@ -77,19 +80,21 @@ export class BooksPageComponent implements OnInit {
 
   updateBook(book: BookModel) {
     this.store.dispatch(
-      BooksPageActions.updateBook({ bookId: book.id, changes: book })
+      BooksPageActions.updateBook({bookId: book.id, changes: book})
     );
 
     this.booksService.update(book.id, book).subscribe(() => {
+      this.store.dispatch(BooksApiActions.updateSuccess({book}));
       this.getBooks();
       this.removeSelectedBook();
     });
   }
 
   onDelete(book: BookModel) {
-    this.store.dispatch(BooksPageActions.deleteBook({ bookId: book.id }));
+    this.store.dispatch(BooksPageActions.deleteBook({bookId: book.id}));
 
     this.booksService.delete(book.id).subscribe(() => {
+      this.store.dispatch(BooksApiActions.deleteSuccess({bookId: book.id}));
       this.getBooks();
       this.removeSelectedBook();
     });
